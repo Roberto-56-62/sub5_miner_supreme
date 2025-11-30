@@ -1,0 +1,13 @@
+model:
+  hf_repo: "bobroller125/supreme_v2"
+
+runtime:
+  device: "cuda"
+  dtype: "auto"
+
+inference:
+  max_new_tokens: 200
+  temperature: 0.2
+  top_p: 0.95
+  do_sample: false
+
