@@ -1,44 +1,77 @@
-import time
-import yaml
+# =============================================================
+# ARC MAIN – SUBNET 5 (ARC-AGI-2)
+# =============================================================
+# Il Sandbox Runner invoca questo file con:
+#
+#   python arc_main.py --phase prep --input /input --output /output
+#   python arc_main.py --phase inference --input /input --output /output
+#
+# - PREP PHASE: internet ABILITATO → scarica Supreme_V2
+# - INFERENCE PHASE: internet DISABILITATO → usa solver Supreme_V2
+# =============================================================
 
-from utilities.logger import log
-from utilities.hf_loader import load_model_and_tokenizer
-from arc_prep_phase import run_prep_phase
-from arc_inference_phase import run_inference_phase
+import argparse
+import sys
+import os
 
-# CONFIG
-with open("config/miner_config.yaml", "r") as f:
-    CFG = yaml.safe_load(f)
+from arc_prep_phase import run_prep
+from arc_inference_phase import run_inference
 
+
+# ----------------------------- MAIN -----------------------------
 
 def main():
-    log("🚀 Avvio Miner Subnet 5 – Supreme V2", "blue")
+    parser = argparse.ArgumentParser(description="ARC-AGI-2 Solver – Subnet 5")
 
-    hf_repo = CFG["model"]["hf_repo"]
-    device = CFG["runtime"]["device"]
+    parser.add_argument("--phase", type=str, required=True,
+                        choices=["prep", "inference"],
+                        help="Phase to run: prep or inference")
 
-    log(f"📥 Carico modello HF: {hf_repo}", "yellow")
-    model, tokenizer = load_model_and_tokenizer(hf_repo, device)
+    parser.add_argument("--input", type=str, required=True,
+                        help="Input directory containing task dataset")
 
-    while True:
-        log("⏳ Attendo nuovo task ARC dal validator...", "cyan")
-        task_json = input().strip()
+    parser.add_argument("--output", type=str, required=True,
+                        help="Output directory for results")
 
-        if task_json.lower() == "exit":
-            log("🛑 Miner fermato.", "red")
-            break
+    args = parser.parse_args()
 
-        t0 = time.time()
+    phase = args.phase
+    input_dir = args.input
+    output_dir = args.output
 
-        prep_data = run_prep_phase(task_json)
-        answer = run_inference_phase(model, tokenizer, prep_data)
+    print(f"[MAIN] 🔵 Phase: {phase}")
+    print(f"[MAIN] 🔵 Input directory: {input_dir}")
+    print(f"[MAIN] 🔵 Output directory: {output_dir}")
 
-        elapsed = time.time() - t0
-        log(f"⏱ Tempo totale task: {elapsed:.3f}s", "green")
+    # =============================================================
+    # Dispatch delle due fasi
+    # =============================================================
 
-        print(answer)
+    if phase == "prep":
+        print("[MAIN] 🔧 Running PREP PHASE…")
+        run_prep(input_dir, output_dir)
+        print("[MAIN] 🟢 Prep phase completed.")
+        return
 
+    if phase == "inference":
+        print("[MAIN] 🧠 Running INFERENCE PHASE…")
+        run_inference(input_dir, output_dir)
+        print("[MAIN] 🟢 Inference phase completed.")
+        return
+
+    # =============================================================
+    # Se arriva qui, qualcosa è sbagliato (non dovrebbe accadere)
+    # =============================================================
+    print(f"[MAIN] 🔴 ERRORE: Phase non valida: {phase}")
+    sys.exit(1)
+
+
+# -------------------------- Entry Point --------------------------
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"[MAIN] 🔴 CRASH FATALE: {e}")
+        sys.exit(1)
 
