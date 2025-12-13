@@ -9,9 +9,14 @@ from typing import List, Dict, Any
 
 import torch
 from transformers import (
+    AutoTokenizer,
     AutoModelForCausalLM,
-    PreTrainedTokenizerFast,
+    AutoConfig,
 )
+
+# 🔒 HARD OFFLINE — evita QUALSIASI lookup HF
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 MODEL_DIR = os.environ.get("SUPREME_V2_DIR", "/app/models/Supreme_V2")
 
@@ -22,6 +27,7 @@ def grid_to_text(grid: List[List[int]]) -> str:
 
 def text_to_grid(text: str) -> List[List[int]]:
     text = (text or "").strip()
+
     try:
         obj = json.loads(text)
         if isinstance(obj, list):
@@ -46,12 +52,27 @@ class ARCSolver:
 
         start = time.time()
 
-        # 🔑 TOKENIZER — sandbox safe, NO AutoConfig
-        self.tokenizer = PreTrainedTokenizerFast.from_pretrained(
-            MODEL_DIR
+        # =====================================================
+        # 1. CONFIG — caricato ESPLICITAMENTE in locale
+        # =====================================================
+        config = AutoConfig.from_pretrained(
+            MODEL_DIR,
+            local_files_only=True,
         )
 
-        # 🔑 MODELLO — locale
+        # =====================================================
+        # 2. TOKENIZER — SLOW, con config già risolto
+        # =====================================================
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            MODEL_DIR,
+            config=config,
+            local_files_only=True,
+            use_fast=False,   # 🔑 IMPORTANTISSIMO
+        )
+
+        # =====================================================
+        # 3. MODELLO — locale
+        # =====================================================
         if torch.cuda.is_available():
             self.model = AutoModelForCausalLM.from_pretrained(
                 MODEL_DIR,
