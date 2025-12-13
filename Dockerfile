@@ -1,41 +1,21 @@
-FROM python:3.10-slim
+FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
-# ===============================
-# System dependencies
-# ===============================
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        git \
-        wget \
-        ca-certificates && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Evita qualsiasi lookup HF
+ENV HF_HUB_OFFLINE=1
+ENV TRANSFORMERS_OFFLINE=1
+ENV TOKENIZERS_PARALLELISM=false
 
-# ===============================
-# Working directory
-# ===============================
 WORKDIR /app
 
-# ===============================
-# Copy miner source code
-# ===============================
+# Copia codice
 COPY . /app
 
-# ===============================
-# Install Python dependencies
-# ===============================
-RUN pip install --no-cache-dir -r requirements.txt
+# Installa SOLO dipendenze leggere
+RUN pip install --no-cache-dir \
+    transformers>=4.36.0 \
+    accelerate \
+    huggingface_hub
 
-# ==========================================================
-# ⚠️ IMPORTANT
-# ----------------------------------------------------------
-# DO NOT use ENTRYPOINT.
-# The Subnet 5 runner will explicitly call:
-#  - arc_prep.py   (internet ENABLED)
-#  - arc_main.py   (internet DISABLED)
-#
-# Leaving CMD as "bash" allows the runner
-# to control which phase is executed.
-# ==========================================================
-CMD ["bash"]
+# Entry
+ENTRYPOINT ["python3", "arc_main.py"]
 
