@@ -1,21 +1,18 @@
-FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
+FROM python:3.10-slim
 
-# Evita qualsiasi lookup HF
-ENV HF_HUB_OFFLINE=1
-ENV TRANSFORMERS_OFFLINE=1
-ENV TOKENIZERS_PARALLELISM=false
+# System deps
+RUN apt-get update && apt-get install -y git wget && apt-get clean
 
 WORKDIR /app
-
-# Copia codice
 COPY . /app
 
-# Installa SOLO dipendenze leggere
-RUN pip install --no-cache-dir \
-    transformers>=4.36.0 \
-    accelerate \
-    huggingface_hub
+# 🔥 FORZA DOWNGRADE (prima di tutto)
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip uninstall -y transformers \
+ && pip install --no-cache-dir transformers==4.35.2
 
-# Entry
+# 🔒 install resto deps
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENTRYPOINT ["python3", "arc_main.py"]
 
