@@ -21,6 +21,10 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 MODEL_DIR = os.environ.get("SUPREME_V2_DIR", "/app/models/Supreme_V2")
 
 
+# ============================================================
+# Utils
+# ============================================================
+
 def grid_to_text(grid: List[List[int]]) -> str:
     return " | ".join(" ".join(str(c) for c in row) for row in grid)
 
@@ -45,6 +49,10 @@ def text_to_grid(text: str) -> List[List[int]]:
     return grid if grid else [[0]]
 
 
+# ============================================================
+# Solver
+# ============================================================
+
 class ARCSolver:
     def __init__(self, use_vllm: bool = False) -> None:
         print("[ARC_SOLVER] 🔵 Inizializzazione ARCSolver (Supreme_V2)")
@@ -53,7 +61,21 @@ class ARCSolver:
         start = time.time()
 
         # =====================================================
-        # 1. CONFIG — caricato ESPLICITAMENTE in locale
+        # 🚨 BLOCCO CRITICO: verifica struttura modello
+        # =====================================================
+        if not os.path.isdir(MODEL_DIR):
+            raise RuntimeError(f"[ARC_SOLVER] ❌ MODEL_DIR non esiste: {MODEL_DIR}")
+
+        config_path = os.path.join(MODEL_DIR, "config.json")
+        if not os.path.isfile(config_path):
+            raise RuntimeError(
+                "[ARC_SOLVER] ❌ config.json NON TROVATO.\n"
+                "👉 Supreme_V2 NON è un modello Transformers valido.\n"
+                "👉 Deve contenere config.json nella root del modello."
+            )
+
+        # =====================================================
+        # 1. CONFIG — SOLO locale, SOLO dopo verifica
         # =====================================================
         config = AutoConfig.from_pretrained(
             MODEL_DIR,
@@ -61,13 +83,13 @@ class ARCSolver:
         )
 
         # =====================================================
-        # 2. TOKENIZER — SLOW, con config già risolto
+        # 2. TOKENIZER — SLOW (obbligatorio per Sub5)
         # =====================================================
         self.tokenizer = AutoTokenizer.from_pretrained(
             MODEL_DIR,
             config=config,
             local_files_only=True,
-            use_fast=False,   # 🔑 IMPORTANTISSIMO
+            use_fast=False,
         )
 
         # =====================================================
@@ -92,6 +114,9 @@ class ARCSolver:
 
         print(f"[ARC_SOLVER] ✅ Supreme_V2 caricato in {time.time() - start:.2f}s")
 
+    # =========================================================
+    # Inference
+    # =========================================================
     def solve(
         self,
         train_examples: List[Dict[str, Any]],
