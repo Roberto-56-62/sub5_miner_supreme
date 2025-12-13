@@ -1,8 +1,6 @@
 transformers>=4.36.0
 accelerate
 huggingface_hub
-torch
 python-dotenv
+numpy
 
-numpy
-numpy
