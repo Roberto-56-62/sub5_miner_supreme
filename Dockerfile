@@ -15,13 +15,12 @@ WORKDIR /app
 COPY . /app
 
 # ============================================================
-# HuggingFace / Transformers – sandbox & large-shard safe
+# HuggingFace / Transformers – sandbox safe
 # ============================================================
 ENV HF_HOME=/app/models
 ENV TRANSFORMERS_CACHE=/app/models
 
-# 🔥 Rete robusta per shard > 5GB
-ENV HF_HUB_ENABLE_HF_TRANSFER=1
+# ⏱️ timeout e retry ALTI (senza hf_transfer)
 ENV HF_HUB_DOWNLOAD_TIMEOUT=300
 ENV HF_HUB_ETAG_TIMEOUT=300
 ENV HF_HUB_MAX_RETRIES=5
@@ -29,7 +28,7 @@ ENV HF_HUB_MAX_RETRIES=5
 ENV PYTHONUNBUFFERED=1
 
 # ============================================================
-# Python deps (versioni controllate)
+# Python deps
 # ============================================================
 RUN pip install --no-cache-dir --upgrade pip && \
     pip uninstall -y transformers || true && \
@@ -37,8 +36,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ============================================================
-# ⛔ NESSUN ENTRYPOINT / CMD ⛔
-# Hone / Sandbox Runner inietta il comando:
-# python3 arc_main.py --phase ...
+# NO ENTRYPOINT / CMD
 # ============================================================
 
