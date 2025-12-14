@@ -18,7 +18,7 @@ from transformers import (
 # ============================================================
 
 # 🔓 Modello PUBBLICO su HuggingFace
-HF_MODEL_ID = "Roberto-56-62/Supreme_V2"
+HF_MODEL_ID = "bobroller125/Supreme_V2"
 
 # Cache HF (il runner monta /app/cache)
 HF_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/app/cache/hf")

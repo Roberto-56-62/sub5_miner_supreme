@@ -18,6 +18,6 @@ in fase di INFERENCE tramite transformers.
 def run_prep():
     print("[PREP] 🔵 Avvio fase PREP")
     print("[PREP] ℹ️ Supreme_V2 è un modello pubblico su HuggingFace")
-    print("[PREP] ℹ️ Nessun download richiesto in PREP phase")
+    print("[PREP] ℹ️ Nessuna azione richiesta in PREP phase")
     print("[PREP] ✅ PREP completata con successo")
 
