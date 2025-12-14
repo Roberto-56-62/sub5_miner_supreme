@@ -1,9 +1,9 @@
 transformers==4.35.2
-accelerate
-huggingface_hub
+accelerate==0.24.1
+huggingface_hub==0.19.4
 python-dotenv
 numpy
 
 sentencepiece>=0.1.99
-protobuf
+protobuf<4.0
 

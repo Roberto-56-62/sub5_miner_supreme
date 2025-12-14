@@ -1,23 +1,35 @@
 # ============================================================
-# ARC PREP PHASE – SUPREME_V2 (Subnet 5)
+# ARC PREP PHASE – SUPREME_V2 (Subnet 5 / Hone)
 # ============================================================
 
+import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
+HF_MODEL_ID = "bobroller125/Supreme_V2"
+MODEL_DIR = "/app/models/Supreme_V2"
+
+
 def run_prep():
-    """
-    PREP phase intentionally left empty.
-
-    Subnet 5 validators load the model directly from HuggingFace
-    using the published repository:
-      - config.json
-      - tokenizer.model
-      - model shards (.safetensors)
-      - sandbox interface
-
-    The miner MUST NOT download or cache the model locally.
-    """
-
     print("[PREP] 🔵 Avvio fase PREP")
-    print("[PREP] ℹ️ Modello pubblico su HuggingFace")
-    print("[PREP] ℹ️ Nessuna operazione richiesta (Subnet 5 compliant)")
-    print("[PREP] ✅ PREP completata")
+    print("[PREP] 📥 Download modello da HuggingFace")
+
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        HF_MODEL_ID,
+        use_fast=False,
+        cache_dir=MODEL_DIR,
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        HF_MODEL_ID,
+        cache_dir=MODEL_DIR,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else None,
+    )
+
+    tokenizer.save_pretrained(MODEL_DIR)
+    model.save_pretrained(MODEL_DIR)
+
+    print(f"[PREP] ✅ Modello salvato in {MODEL_DIR}")
 

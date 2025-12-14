@@ -1,26 +1,28 @@
 # ============================================================
-# ARC MAIN – SUPREME_V2 (Subnet 5)
+# ARC MAIN – SUPREME_V2 (Subnet 5 / Hone)
 # ============================================================
 
+import argparse
 from arc_prep_phase import run_prep
 from arc_inference_phase import run_inference
 
+
 def main():
-    print("[MAIN] 🚀 Avvio pipeline ARC")
+    parser = argparse.ArgumentParser(description="ARC Solver Entry Point")
+    parser.add_argument("--phase", required=True, choices=["prep", "inference"])
+    parser.add_argument("--input", required=True)
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args()
 
-    # =========================
-    # PREP PHASE (OBBLIGATORIA)
-    # =========================
-    print("[MAIN] 🧪 Esecuzione PREP phase")
-    run_prep()
+    print(f"[MAIN] 🚀 ARC pipeline – phase={args.phase}")
 
-    # =========================
-    # INFERENCE PHASE
-    # =========================
-    print("[MAIN] 🤖 Esecuzione INFERENCE phase")
-    run_inference()
+    if args.phase == "prep":
+        run_prep()
+    elif args.phase == "inference":
+        run_inference(args.input, args.output)
 
-    print("[MAIN] ✅ Pipeline completata")
+    print("[MAIN] ✅ Phase completata")
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 # ============================================================
-# ARC SOLVER – SUPREME_V2 (Subnet 5 – ARC-AGI-2)
+# ARC SOLVER – SUPREME_V2 (Subnet 5 / Hone)
 # ============================================================
 
 import time
@@ -9,15 +9,8 @@ from typing import List, Dict, Any
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# ============================================================
-# CONFIG – Subnet 5 OFFICIAL
-# ============================================================
+MODEL_DIR = "/app/models/Supreme_V2"
 
-HF_MODEL_ID = "bobroller125/Supreme_V2"
-
-# ============================================================
-# Utils
-# ============================================================
 
 def grid_to_text(grid: List[List[int]]) -> str:
     return " | ".join(" ".join(str(c) for c in row) for row in grid)
@@ -25,7 +18,6 @@ def grid_to_text(grid: List[List[int]]) -> str:
 
 def text_to_grid(text: str) -> List[List[int]]:
     text = (text or "").strip()
-
     try:
         obj = json.loads(text)
         if isinstance(obj, list):
@@ -42,91 +34,72 @@ def text_to_grid(text: str) -> List[List[int]]:
 
     return grid if grid else [[0]]
 
-# ============================================================
-# Solver
-# ============================================================
 
 class ARCSolver:
     def __init__(self) -> None:
-        print("[ARC_SOLVER] 🔵 Inizializzazione ARCSolver (Supreme_V2)")
-        print(f"[ARC_SOLVER] 🔵 HF_MODEL_ID: {HF_MODEL_ID}")
-
+        print("[ARC_SOLVER] 🔵 Init Supreme_V2 (local-only)")
         start = time.time()
 
-        # =====================================================
-        # TOKENIZER (slow – richiesto da Subnet 5)
-        # =====================================================
         self.tokenizer = AutoTokenizer.from_pretrained(
-            HF_MODEL_ID,
+            MODEL_DIR,
             use_fast=False,
+            local_files_only=True,
         )
 
-        # =====================================================
-        # MODELLO
-        # =====================================================
         if torch.cuda.is_available():
             self.model = AutoModelForCausalLM.from_pretrained(
-                HF_MODEL_ID,
+                MODEL_DIR,
+                local_files_only=True,
                 torch_dtype=torch.float16,
                 device_map="auto",
                 low_cpu_mem_usage=True,
             )
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
-                HF_MODEL_ID
+                MODEL_DIR,
+                local_files_only=True,
             ).to("cpu")
 
         self.model.eval()
         torch.manual_seed(0)
 
-        print(f"[ARC_SOLVER] ✅ Supreme_V2 caricato in {time.time() - start:.2f}s")
+        print(f"[ARC_SOLVER] ✅ Modello caricato in {time.time() - start:.2f}s")
 
-    # =========================================================
-    # Inference
-    # =========================================================
     def solve(
         self,
         train_examples: List[Dict[str, Any]],
         test_input: List[List[int]],
     ) -> List[List[int]]:
 
-        try:
-            prompt = ["Solve the ARC task.\n"]
+        prompt = ["Solve the ARC task.\n"]
 
-            for i, ex in enumerate(train_examples):
-                prompt.append(f"Example {i + 1}:")
-                prompt.append(f"Input: {grid_to_text(ex['input'])}")
-                prompt.append(f"Output: {grid_to_text(ex['output'])}")
-                prompt.append("")
+        for i, ex in enumerate(train_examples):
+            prompt.append(f"Example {i + 1}:")
+            prompt.append(f"Input: {grid_to_text(ex['input'])}")
+            prompt.append(f"Output: {grid_to_text(ex['output'])}")
+            prompt.append("")
 
-            prompt.append(f"Test Input: {grid_to_text(test_input)}")
-            prompt.append("Predicted Output:")
+        prompt.append(f"Test Input: {grid_to_text(test_input)}")
+        prompt.append("Predicted Output:")
 
-            inputs = self.tokenizer(
-                "\n".join(prompt),
-                return_tensors="pt",
-            ).to(self.model.device)
+        inputs = self.tokenizer(
+            "\n".join(prompt),
+            return_tensors="pt",
+        ).to(self.model.device)
 
-            with torch.no_grad():
-                out = self.model.generate(
-                    **inputs,
-                    max_new_tokens=200,
-                    temperature=0.0,
-                    do_sample=False,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                )
-
-            decoded = self.tokenizer.decode(
-                out[0],
-                skip_special_tokens=True,
+        with torch.no_grad():
+            out = self.model.generate(
+                **inputs,
+                max_new_tokens=200,
+                temperature=0.0,
+                do_sample=False,
+                pad_token_id=self.tokenizer.eos_token_id,
             )
 
-            if "Predicted Output:" in decoded:
-                decoded = decoded.split("Predicted Output:", 1)[1]
+        decoded = self.tokenizer.decode(out[0], skip_special_tokens=True)
 
-            return text_to_grid(decoded)
+        if "Predicted Output:" in decoded:
+            decoded = decoded.split("Predicted Output:", 1)[1]
 
-        except Exception as e:
-            print(f"[ARC_SOLVER] 🔴 ERRORE solve(): {e}")
-            return [[0]]
+        return text_to_grid(decoded)
 
