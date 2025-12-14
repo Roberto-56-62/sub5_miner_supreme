@@ -2,29 +2,18 @@
 # ARC SOLVER – SUPREME_V2 (Subnet 5 – ARC-AGI-2)
 # ============================================================
 
-import os
 import time
 import json
 from typing import List, Dict, Any
 
 import torch
-from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
-)
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # ============================================================
-# 🔒 FORZA HuggingFace SU PATH SCRIVIBILE (OBBLIGATORIO Subnet 5)
+# CONFIG – Subnet 5 OFFICIAL
 # ============================================================
 
-os.environ["HF_HOME"] = "/app/models/.hf"
-os.environ["TRANSFORMERS_CACHE"] = "/app/models/.hf"
-# ============================================================
-# CONFIG (SOLO LOCALE – Subnet 5 compliant)
-# ============================================================
-
-MODEL_DIR = "/app/models/Supreme_V2"
-
+HF_MODEL_ID = "bobroller125/Supreme_V2"
 
 # ============================================================
 # Utils
@@ -53,59 +42,44 @@ def text_to_grid(text: str) -> List[List[int]]:
 
     return grid if grid else [[0]]
 
-
 # ============================================================
 # Solver
 # ============================================================
 
 class ARCSolver:
-    def __init__(self, use_vllm: bool = False) -> None:
+    def __init__(self) -> None:
         print("[ARC_SOLVER] 🔵 Inizializzazione ARCSolver (Supreme_V2)")
-        print(f"[ARC_SOLVER] 🔵 MODEL_DIR: {MODEL_DIR}")
+        print(f"[ARC_SOLVER] 🔵 HF_MODEL_ID: {HF_MODEL_ID}")
 
         start = time.time()
 
         # =====================================================
-        # VERIFICA STRUTTURA MODELLO (OBBLIGATORIA)
-        # =====================================================
-        if not os.path.isdir(MODEL_DIR):
-            raise RuntimeError(
-                f"[ARC_SOLVER] ❌ MODEL_DIR non trovato: {MODEL_DIR}"
-            )
-
-        # =====================================================
-        # TOKENIZER — SLOW (richiesto da Subnet 5)
+        # TOKENIZER (slow – richiesto da Subnet 5)
         # =====================================================
         self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_DIR,
+            HF_MODEL_ID,
             use_fast=False,
-            local_files_only=True,
         )
 
         # =====================================================
-        # MODELLO — SOLO LOCALE
+        # MODELLO
         # =====================================================
         if torch.cuda.is_available():
             self.model = AutoModelForCausalLM.from_pretrained(
-                MODEL_DIR,
+                HF_MODEL_ID,
                 torch_dtype=torch.float16,
                 device_map="auto",
                 low_cpu_mem_usage=True,
-                local_files_only=True,
             )
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
-                MODEL_DIR,
-                local_files_only=True,
+                HF_MODEL_ID
             ).to("cpu")
 
         self.model.eval()
         torch.manual_seed(0)
 
-        print(
-            f"[ARC_SOLVER] ✅ Supreme_V2 caricato in "
-            f"{time.time() - start:.2f}s"
-        )
+        print(f"[ARC_SOLVER] ✅ Supreme_V2 caricato in {time.time() - start:.2f}s")
 
     # =========================================================
     # Inference

@@ -2,54 +2,22 @@
 # ARC PREP PHASE – SUPREME_V2 (Subnet 5)
 # ============================================================
 
-import os
-from transformers import AutoTokenizer, AutoModelForCausalLM
-
-HF_REPO = "bobroller125/Supreme_V2"
-MODEL_DIR = "/app/models/Supreme_V2"
-HF_HOME_DIR = "/app/models/.hf"
-
-
 def run_prep():
+    """
+    PREP phase intentionally left empty.
+
+    Subnet 5 validators load the model directly from HuggingFace
+    using the published repository:
+      - config.json
+      - tokenizer.model
+      - model shards (.safetensors)
+      - sandbox interface
+
+    The miner MUST NOT download or cache the model locally.
+    """
+
     print("[PREP] 🔵 Avvio fase PREP")
-    print(f"[PREP] 📦 Repo HF: {HF_REPO}")
-    print(f"[PREP] 📁 Destinazione: {MODEL_DIR}")
-
-    # =====================================================
-    # 🔒 FORZA HuggingFace su filesystem SCRIVIBILE
-    # =====================================================
-    os.environ["HF_HOME"] = HF_HOME_DIR
-    os.environ["TRANSFORMERS_CACHE"] = HF_HOME_DIR
-
-    os.makedirs(HF_HOME_DIR, exist_ok=True)
-
-    # =====================================================
-    # Se il modello è già presente, NON riscarichiamo
-    # =====================================================
-    if os.path.isdir(MODEL_DIR) and os.path.isfile(os.path.join(MODEL_DIR, "config.json")):
-        print("[PREP] ✅ Modello già presente, skip download")
-        return
-
-    os.makedirs(MODEL_DIR, exist_ok=True)
-
-    # =====================================================
-    # Download tokenizer (modello pubblico)
-    # =====================================================
-    print("[PREP] ⬇️ Download tokenizer (public HF)")
-    AutoTokenizer.from_pretrained(
-        HF_REPO,
-        use_fast=False,
-        cache_dir=MODEL_DIR,
-    )
-
-    # =====================================================
-    # Download modello
-    # =====================================================
-    print("[PREP] ⬇️ Download modello (public HF)")
-    AutoModelForCausalLM.from_pretrained(
-        HF_REPO,
-        cache_dir=MODEL_DIR,
-    )
-
-    print("[PREP] ✅ Supreme_V2 scaricato correttamente")
+    print("[PREP] ℹ️ Modello pubblico su HuggingFace")
+    print("[PREP] ℹ️ Nessuna operazione richiesta (Subnet 5 compliant)")
+    print("[PREP] ✅ PREP completata")
 
