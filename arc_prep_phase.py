@@ -5,34 +5,38 @@
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# =========================
-# CONFIG
-# =========================
-HF_REPO_ID = "Roberto-56-62/Supreme_V2"   # <-- repo HF reale
+
+HF_REPO = "Roberto-56-62/Supreme_V2"
 MODEL_DIR = "/app/models/Supreme_V2"
 
-# Cache HF SCRIVIBILE (IMPORTANTISSIMO)
-os.environ["TRANSFORMERS_CACHE"] = "/app/cache/hf"
-os.environ["HF_HOME"] = "/app/cache/hf"
 
 def run_prep():
     print("[PREP] 🔵 Avvio fase PREP")
-    print(f"[PREP] 📦 Repo HF: {HF_REPO_ID}")
+    print(f"[PREP] 📦 Repo HF: {HF_REPO}")
     print(f"[PREP] 📁 Destinazione: {MODEL_DIR}")
+
+    hf_token = os.environ.get("HF_TOKEN")
+    if not hf_token:
+        raise RuntimeError(
+            "[PREP] ❌ HF_TOKEN non presente. "
+            "Impossibile scaricare modello privato."
+        )
 
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     print("[PREP] ⬇️ Download tokenizer da Hugging Face…")
     AutoTokenizer.from_pretrained(
-        HF_REPO_ID,
-        cache_dir="/app/cache/hf"
-    ).save_pretrained(MODEL_DIR)
+        HF_REPO,
+        token=hf_token,
+        cache_dir=MODEL_DIR,
+    )
 
-    print("[PREP] ⬇️ Download model da Hugging Face…")
+    print("[PREP] ⬇️ Download modello da Hugging Face…")
     AutoModelForCausalLM.from_pretrained(
-        HF_REPO_ID,
-        cache_dir="/app/cache/hf"
-    ).save_pretrained(MODEL_DIR)
+        HF_REPO,
+        token=hf_token,
+        cache_dir=MODEL_DIR,
+    )
 
     print("[PREP] ✅ Supreme_V2 scaricato correttamente")
 
