@@ -3,4 +3,6 @@ accelerate
 huggingface_hub
 python-dotenv
 numpy
+sentencepiece>=0.1.99
+torch
 
