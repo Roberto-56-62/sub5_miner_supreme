@@ -1,97 +1,49 @@
-# =============================================================
-# ARC PREP PHASE – SUBNET 5 (ARC-AGI-2)
-# =============================================================
-# Internet: ABILITATO
-# Obiettivo:
-#   - Scaricare Supreme_V2
-#   - Salvare tokenizer + model + config + generation_config
-#   - Rendere inference 100% OFFLINE
-# =============================================================
+# ============================================================
+# ARC PREP PHASE – SUPREME_V2
+# Subnet 5 – ARC-AGI-2
+# ============================================================
 
 import os
-import json
-import time
-import torch
-from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
-    AutoConfig,
-    GenerationConfig,
-)
+from huggingface_hub import snapshot_download
 
-MODEL_ID = "bobroller125/supreme_v2"
-MODEL_DIR = os.environ.get("SUPREME_V2_DIR", "/app/models/Supreme_V2")
+# ============================================================
+# CONFIG
+# ============================================================
 
+# Directory finale dove il modello DEVE esistere
+MODEL_DIR = "/app/models/Supreme_V2"
 
-def ensure_dir(path: str):
-    if path:
-        os.makedirs(path, exist_ok=True)
+# Repo Hugging Face del modello (TUO)
+HF_REPO_ID = "Roberto-56-62/Supreme_V2"
 
+# ============================================================
+# PREP LOGIC
+# ============================================================
 
-def write_json(obj, path: str):
-    ensure_dir(os.path.dirname(path))
-    with open(path, "w") as f:
-        json.dump(obj, f, indent=2)
+def run_prep():
+    print("[PREP] 🔵 Avvio fase PREP")
 
+    # Assicura la directory /app/models
+    os.makedirs("/app/models", exist_ok=True)
 
-def run_prep(input_dir: str, output_dir: str) -> None:
-    print("[PREP] 🔵 Avvio PREP PHASE – Supreme_V2")
-    print(f"[PREP] 🔵 Repo HF: {MODEL_ID}")
-    print(f"[PREP] 🔵 Target dir: {MODEL_DIR}")
+    # Se il modello è già presente → non riscaricare
+    if os.path.exists(MODEL_DIR) and os.path.isdir(MODEL_DIR):
+        print(f"[PREP] ✅ Modello già presente in {MODEL_DIR}")
+        return
 
-    ensure_dir(MODEL_DIR)
-    start = time.time()
+    # Download da Hugging Face (ONLINE)
+    print(f"[PREP] ⬇️ Download Supreme_V2 da Hugging Face ({HF_REPO_ID})")
 
-    # =========================================================
-    # 1. TOKENIZER
-    # =========================================================
-    print("[PREP] 🔵 Download tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    tokenizer.save_pretrained(MODEL_DIR)
-
-    # =========================================================
-    # 2. CONFIG (CRITICO)
-    # =========================================================
-    print("[PREP] 🔵 Download config...")
-    config = AutoConfig.from_pretrained(MODEL_ID)
-    config.save_pretrained(MODEL_DIR)
-
-    # =========================================================
-    # 3. GENERATION CONFIG (CRITICO)
-    # =========================================================
-    try:
-        gen_cfg = GenerationConfig.from_pretrained(MODEL_ID)
-        gen_cfg.save_pretrained(MODEL_DIR)
-        print("[PREP] 🟢 generation_config.json salvato")
-    except Exception:
-        print("[PREP] 🟡 generation_config non presente (ok)")
-
-    # =========================================================
-    # 4. MODELLO
-    # =========================================================
-    print("[PREP] 🔵 Download modello...")
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+    snapshot_download(
+        repo_id=HF_REPO_ID,
+        local_dir=MODEL_DIR,
+        local_dir_use_symlinks=False,
+        resume_download=True
     )
-    model.save_pretrained(MODEL_DIR)
 
-    elapsed = time.time() - start
-    print(f"[PREP] 🟢 Download completato in {elapsed:.2f}s")
+    # Verifica finale
+    if not os.path.exists(MODEL_DIR):
+        raise RuntimeError("[PREP] ❌ Download fallito: MODEL_DIR non creato")
 
-    # =========================================================
-    # 5. STATUS
-    # =========================================================
-    ensure_dir(output_dir)
-
-    status = {
-        "phase": "prep",
-        "status": "success",
-        "model_id": MODEL_ID,
-        "model_path": MODEL_DIR,
-        "files": sorted(os.listdir(MODEL_DIR)),
-    }
-
-    write_json(status, os.path.join(output_dir, "prep_status.json"))
-    print("[PREP] 🎉 PREP PHASE COMPLETATA")
+    print("[PREP] ✅ Download Supreme_V2 completato con successo")
 
