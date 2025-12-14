@@ -14,14 +14,10 @@ from transformers import (
 )
 
 # ============================================================
-# CONFIG
+# CONFIG (SOLO LOCALE – Subnet 5 compliant)
 # ============================================================
 
-# 🔓 Modello PUBBLICO su HuggingFace
-HF_MODEL_ID = "bobroller125/Supreme_V2"
-
-# Cache HF (il runner monta /app/cache)
-HF_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/tmp/hf_cache")
+MODEL_DIR = "/app/models/Supreme_V2"
 
 
 # ============================================================
@@ -59,41 +55,51 @@ def text_to_grid(text: str) -> List[List[int]]:
 class ARCSolver:
     def __init__(self, use_vllm: bool = False) -> None:
         print("[ARC_SOLVER] 🔵 Inizializzazione ARCSolver (Supreme_V2)")
-        print(f"[ARC_SOLVER] 🔵 HF_MODEL_ID: {HF_MODEL_ID}")
-        print(f"[ARC_SOLVER] 🔵 CACHE_DIR: {HF_CACHE_DIR}")
+        print(f"[ARC_SOLVER] 🔵 MODEL_DIR: {MODEL_DIR}")
 
         start = time.time()
 
         # =====================================================
-        # TOKENIZER (slow, richiesto da Subnet 5)
+        # VERIFICA STRUTTURA MODELLO (OBBLIGATORIA)
+        # =====================================================
+        if not os.path.isdir(MODEL_DIR):
+            raise RuntimeError(
+                f"[ARC_SOLVER] ❌ MODEL_DIR non trovato: {MODEL_DIR}"
+            )
+
+        # =====================================================
+        # TOKENIZER — SLOW (richiesto da Subnet 5)
         # =====================================================
         self.tokenizer = AutoTokenizer.from_pretrained(
-            HF_MODEL_ID,
+            MODEL_DIR,
             use_fast=False,
-            cache_dir=HF_CACHE_DIR,
+            local_files_only=True,
         )
 
         # =====================================================
-        # MODELLO
+        # MODELLO — SOLO LOCALE
         # =====================================================
         if torch.cuda.is_available():
             self.model = AutoModelForCausalLM.from_pretrained(
-                HF_MODEL_ID,
+                MODEL_DIR,
                 torch_dtype=torch.float16,
                 device_map="auto",
                 low_cpu_mem_usage=True,
-                cache_dir=HF_CACHE_DIR,
+                local_files_only=True,
             )
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
-                HF_MODEL_ID,
-                cache_dir=HF_CACHE_DIR,
+                MODEL_DIR,
+                local_files_only=True,
             ).to("cpu")
 
         self.model.eval()
         torch.manual_seed(0)
 
-        print(f"[ARC_SOLVER] ✅ Supreme_V2 caricato in {time.time() - start:.2f}s")
+        print(
+            f"[ARC_SOLVER] ✅ Supreme_V2 caricato in "
+            f"{time.time() - start:.2f}s"
+        )
 
     # =========================================================
     # Inference
@@ -106,8 +112,9 @@ class ARCSolver:
 
         try:
             prompt = ["Solve the ARC task.\n"]
+
             for i, ex in enumerate(train_examples):
-                prompt.append(f"Example {i+1}:")
+                prompt.append(f"Example {i + 1}:")
                 prompt.append(f"Input: {grid_to_text(ex['input'])}")
                 prompt.append(f"Output: {grid_to_text(ex['output'])}")
                 prompt.append("")
@@ -117,7 +124,7 @@ class ARCSolver:
 
             inputs = self.tokenizer(
                 "\n".join(prompt),
-                return_tensors="pt"
+                return_tensors="pt",
             ).to(self.model.device)
 
             with torch.no_grad():
@@ -129,7 +136,11 @@ class ARCSolver:
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
-            decoded = self.tokenizer.decode(out[0], skip_special_tokens=True)
+            decoded = self.tokenizer.decode(
+                out[0],
+                skip_special_tokens=True,
+            )
+
             if "Predicted Output:" in decoded:
                 decoded = decoded.split("Predicted Output:", 1)[1]
 
