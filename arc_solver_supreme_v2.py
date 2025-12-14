@@ -14,6 +14,12 @@ from transformers import (
 )
 
 # ============================================================
+# 🔒 FORZA HuggingFace SU PATH SCRIVIBILE (OBBLIGATORIO Subnet 5)
+# ============================================================
+
+os.environ["HF_HOME"] = "/app/models/.hf"
+os.environ["TRANSFORMERS_CACHE"] = "/app/models/.hf"
+# ============================================================
 # CONFIG (SOLO LOCALE – Subnet 5 compliant)
 # ============================================================
 
