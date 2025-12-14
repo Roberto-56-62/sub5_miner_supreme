@@ -11,14 +11,17 @@ import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    AutoConfig,
 )
 
-# 🔒 HARD OFFLINE — evita QUALSIASI lookup HF
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+# ============================================================
+# CONFIG
+# ============================================================
 
-MODEL_DIR = os.environ.get("SUPREME_V2_DIR", "/app/models/Supreme_V2")
+# 🔓 Modello PUBBLICO su HuggingFace
+HF_MODEL_ID = "Roberto-56-62/Supreme_V2"
+
+# Cache HF (il runner monta /app/cache)
+HF_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/app/cache/hf")
 
 
 # ============================================================
@@ -56,57 +59,35 @@ def text_to_grid(text: str) -> List[List[int]]:
 class ARCSolver:
     def __init__(self, use_vllm: bool = False) -> None:
         print("[ARC_SOLVER] 🔵 Inizializzazione ARCSolver (Supreme_V2)")
-        print(f"[ARC_SOLVER] 🔵 MODEL_DIR: {MODEL_DIR}")
+        print(f"[ARC_SOLVER] 🔵 HF_MODEL_ID: {HF_MODEL_ID}")
+        print(f"[ARC_SOLVER] 🔵 CACHE_DIR: {HF_CACHE_DIR}")
 
         start = time.time()
 
         # =====================================================
-        # 🚨 BLOCCO CRITICO: verifica struttura modello
-        # =====================================================
-        if not os.path.isdir(MODEL_DIR):
-            raise RuntimeError(f"[ARC_SOLVER] ❌ MODEL_DIR non esiste: {MODEL_DIR}")
-
-        config_path = os.path.join(MODEL_DIR, "config.json")
-        if not os.path.isfile(config_path):
-            raise RuntimeError(
-                "[ARC_SOLVER] ❌ config.json NON TROVATO.\n"
-                "👉 Supreme_V2 NON è un modello Transformers valido.\n"
-                "👉 Deve contenere config.json nella root del modello."
-            )
-
-        # =====================================================
-        # 1. CONFIG — SOLO locale, SOLO dopo verifica
-        # =====================================================
-        config = AutoConfig.from_pretrained(
-            MODEL_DIR,
-            local_files_only=True,
-        )
-
-        # =====================================================
-        # 2. TOKENIZER — SLOW (obbligatorio per Sub5)
+        # TOKENIZER (slow, richiesto da Subnet 5)
         # =====================================================
         self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_DIR,
-            config=config,
-            local_files_only=True,
+            HF_MODEL_ID,
             use_fast=False,
+            cache_dir=HF_CACHE_DIR,
         )
 
         # =====================================================
-        # 3. MODELLO — locale
+        # MODELLO
         # =====================================================
         if torch.cuda.is_available():
             self.model = AutoModelForCausalLM.from_pretrained(
-                MODEL_DIR,
+                HF_MODEL_ID,
                 torch_dtype=torch.float16,
                 device_map="auto",
                 low_cpu_mem_usage=True,
-                local_files_only=True,
+                cache_dir=HF_CACHE_DIR,
             )
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
-                MODEL_DIR,
-                local_files_only=True,
+                HF_MODEL_ID,
+                cache_dir=HF_CACHE_DIR,
             ).to("cpu")
 
         self.model.eval()
