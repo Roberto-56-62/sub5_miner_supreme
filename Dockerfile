@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ============================================================
-# Entry point (Hone will pass --phase, --input, --output)
+# ⛔ NESSUN ENTRYPOINT ⛔
+# Hone / Sandbox Runner passa il comando
 # ============================================================
-ENTRYPOINT ["python3", "arc_main.py"]
 
