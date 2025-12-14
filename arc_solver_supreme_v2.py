@@ -21,7 +21,7 @@ from transformers import (
 HF_MODEL_ID = "bobroller125/Supreme_V2"
 
 # Cache HF (il runner monta /app/cache)
-HF_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/app/cache/hf")
+HF_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/tmp/hf_cache")
 
 
 # ============================================================
