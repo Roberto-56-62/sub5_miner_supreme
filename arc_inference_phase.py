@@ -1,51 +1,46 @@
-# ============================================================
-# ARC INFERENCE PHASE – HONE-COMPATIBLE STUB (writable output)
-# ============================================================
-
 import json
 import os
+import sys
+import numpy as np
 
+SOLVER_DIR = os.environ.get("SOLVER_DIR", "/app/arc_solver")
 
-def _first_writable_dir(candidates):
-    for d in candidates:
-        try:
-            os.makedirs(d, exist_ok=True)
-            test_path = os.path.join(d, ".write_test")
-            with open(test_path, "w") as f:
-                f.write("ok")
-            os.remove(test_path)
-            return d
-        except Exception:
-            continue
-    raise RuntimeError(f"Nessuna directory scrivibile tra: {candidates}")
-
+# directory output: nel runner è scrivibile /output (come hai visto)
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/output")
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "results.json")
 
 def run_inference():
-    print("[INFERENCE] 🔵 Avvio inference phase (Hone stub)")
-    print("[INFERENCE] Nessun accesso diretto al dataset (by design)")
+    print("[INFERENCE] Starting inference...")
 
-    # In Hone /app può essere read-only. Usiamo solo mount standard o /tmp.
-    out_dir = _first_writable_dir(["/output", "/tmp/output"])
-    output_file = os.path.join(out_dir, "results.json")
+    # assicura output scrivibile
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    result = {
-        "phase": "inference",
-        "status": "success",
-        "predictions": [],
-        "aggregate": {
-            "accuracy": 0.0,
-            "solved": 0,
-            "total": 0
-        },
-        "meta": {
-            "solver": "stub",
-         "note": "Hone ARC stub – ready for external solver"
-        }
-    }
+    # aggiunge solver al path
+    if SOLVER_DIR not in sys.path:
+        sys.path.insert(0, SOLVER_DIR)
 
-    with open(output_file, "w") as f:
-        json.dump(result, f)
+    try:
+        from arc_solver.solver.core import ARCSolver
+    except Exception as e:
+        # fallback: output minimale ma non crashare il runner
+        print(f"[INFERENCE] ERROR importing solver: {e}")
+        with open(OUTPUT_FILE, "w") as f:
+            json.dump({"predictions": [], "error": f"import_failed: {str(e)}"}, f)
+        print(f"[INFERENCE] Wrote fallback output to {OUTPUT_FILE}")
+        return
 
-    print(f"[INFERENCE] ✅ Output scritto in {output_file}")
-    print("[INFERENCE] ✅ Inference completata con successo")
+    solver = ARCSolver()
+
+    # ⚠️ Qui per ora facciamo una demo “safe”: se non abbiamo dataset vero,
+    # produciamo predictions vuote ma “formalmente ok”.
+    # Nel punto C andiamo ad agganciare il dataset reale del runner.
+    predictions = []
+
+    with open(OUTPUT_FILE, "w") as f:
+        json.dump({"predictions": predictions}, f)
+
+    print(f"[INFERENCE] ✅ Wrote results to {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    run_inference()
 
