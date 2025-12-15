@@ -6,47 +6,70 @@ import json
 import os
 import subprocess
 
+# Path standard Hone
+DATASET_DIR = "/app/data"
+OUTPUT_DIR = "/app/output"
 
-def run_inference(input_dir: str = "/input", output_dir: str = "/output"):
+
+def _load_dataset():
     """
-    Inference stub.
-    - Riceve input dal runner
-    - Chiama il solver esterno (altro repository)
-    - Scrive l'output per il validator
+    Hone monta il dataset in /app/data
+    Il nome file può variare → li cerchiamo in modo robusto
     """
+    candidates = [
+        "dataset.json",
+        "tasks.json",
+        "miner_current_dataset.json",
+    ]
 
-    print("[INFERENCE] 🔵 Avvio inference stub")
+    for name in candidates:
+        path = os.path.join(DATASET_DIR, name)
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                return path, json.load(f)
 
-    input_file = os.path.join(input_dir, "miner_current_dataset.json")
-    output_file = os.path.join(output_dir, "results.json")
+    raise RuntimeError("Dataset Hone non trovato in /app/data")
 
-    if not os.path.exists(input_file):
-        raise RuntimeError("Input dataset non trovato")
 
-    os.makedirs(output_dir, exist_ok=True)
+def run_inference():
+    print("[INFERENCE] 🔵 Avvio inference phase")
 
     # --------------------------------------------------------
-    # CHIAMATA AL SOLVER ESTERNO
-    # (qui verrà agganciato il non-modello)
+    # LOAD DATASET
     # --------------------------------------------------------
-    # ESEMPIO:
+    dataset_path, dataset = _load_dataset()
+    print(f"[INFERENCE] Dataset caricato da: {dataset_path}")
+    print(f"[INFERENCE] Numero task: {len(dataset)}")
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_file = os.path.join(OUTPUT_DIR, "results.json")
+
+    # --------------------------------------------------------
+    # CHIAMATA AL SOLVER ESTERNO (NON-MODELLO)
+    # (per ora DISATTIVATA)
+    # --------------------------------------------------------
+    # ESEMPIO FUTURO:
     # subprocess.run(
-    #     ["python3", "solver_main.py", input_file, output_file],
+    #     ["python3", "solver_main.py", dataset_path, output_file],
     #     check=True,
     # )
 
     # --------------------------------------------------------
-    # TEMPORANEO: output vuoto valido (per test runner)
+    # OUTPUT VALIDO (TEST B)
     # --------------------------------------------------------
-    with open(output_file, "w") as f:
-        json.dump(
-            {
-                "phase": "inference",
-                "status": "success",
-                "predictions": []
-            },
-            f
-        )
+    result = {
+        "phase": "inference",
+        "status": "success",
+        "predictions": [],
+        "meta": {
+            "solver": "stub",
+            "tasks_seen": len(dataset)
+        }
+    }
 
-    print("[INFERENCE] ✅ Inference stub completata")
+    with open(output_file, "w") as f:
+        json.dump(result, f)
+
+    print(f"[INFERENCE] ✅ Output scritto in {output_file}")
+    print("[INFERENCE] ✅ Inference completata con successo")
 
