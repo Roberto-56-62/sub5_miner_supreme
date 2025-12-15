@@ -32,11 +32,15 @@ def run_inference():
         "phase": "inference",
         "status": "success",
         "predictions": [],
+        "aggregate": {
+            "accuracy": 0.0,
+            "solved": 0,
+            "total": 0
+        },
         "meta": {
             "solver": "stub",
-            "note": "Hone ARC stub – no direct dataset access",
-            "output_dir": out_dir,
-        },
+         "note": "Hone ARC stub – ready for external solver"
+        }
     }
 
     with open(output_file, "w") as f:
