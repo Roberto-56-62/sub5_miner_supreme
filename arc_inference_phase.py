@@ -1,46 +1,30 @@
 import json
-import os
-import sys
-import numpy as np
+from solver.core import ARCSolver
 
-SOLVER_DIR = os.environ.get("SOLVER_DIR", "/app/arc_solver")
-
-# directory output: nel runner è scrivibile /output (come hai visto)
-OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/output")
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, "results.json")
-
-def run_inference():
-    print("[INFERENCE] Starting inference...")
-
-    # assicura output scrivibile
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    # aggiunge solver al path
-    if SOLVER_DIR not in sys.path:
-        sys.path.insert(0, SOLVER_DIR)
-
-    try:
-        from arc_solver.solver.core import ARCSolver
-    except Exception as e:
-        # fallback: output minimale ma non crashare il runner
-        print(f"[INFERENCE] ERROR importing solver: {e}")
-        with open(OUTPUT_FILE, "w") as f:
-            json.dump({"predictions": [], "error": f"import_failed: {str(e)}"}, f)
-        print(f"[INFERENCE] Wrote fallback output to {OUTPUT_FILE}")
-        return
+def run_inference(input_path="/input", output_path="/output"):
+    with open(f"{input_path}/miner_current_dataset.json") as f:
+        data = json.load(f)
 
     solver = ARCSolver()
-
-    # ⚠️ Qui per ora facciamo una demo “safe”: se non abbiamo dataset vero,
-    # produciamo predictions vuote ma “formalmente ok”.
-    # Nel punto C andiamo ad agganciare il dataset reale del runner.
     predictions = []
 
-    with open(OUTPUT_FILE, "w") as f:
-        json.dump({"predictions": predictions}, f)
+    for i, task in enumerate(data["tasks"]):
+        pred = solver.solve(
+            train_examples=task["train_examples"],
+            test_input=task["test_input"],
+        )
+        predictions.append({
+            "problem_index": i,
+            "task_hash": task["task_hash"],
+            "predicted_output": pred,
+        })
 
-    print(f"[INFERENCE] ✅ Wrote results to {OUTPUT_FILE}")
+    out = {
+        "phase": "inference",
+        "status": "success",
+        "predictions": predictions,
+    }
 
-if __name__ == "__main__":
-    run_inference()
+    with open(f"{output_path}/results.json", "w") as f:
+        json.dump(out, f)
 
