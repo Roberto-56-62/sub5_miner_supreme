@@ -1,23 +1,33 @@
 # ============================================================
-# ARC INFERENCE PHASE – HONE-COMPATIBLE STUB
+# ARC INFERENCE PHASE – HONE-COMPATIBLE STUB (writable output)
 # ============================================================
 
 import json
 import os
 
-OUTPUT_DIR = "/app/output"
+
+def _first_writable_dir(candidates):
+    for d in candidates:
+        try:
+            os.makedirs(d, exist_ok=True)
+            test_path = os.path.join(d, ".write_test")
+            with open(test_path, "w") as f:
+                f.write("ok")
+            os.remove(test_path)
+            return d
+        except Exception:
+            continue
+    raise RuntimeError(f"Nessuna directory scrivibile tra: {candidates}")
 
 
 def run_inference():
     print("[INFERENCE] 🔵 Avvio inference phase (Hone stub)")
     print("[INFERENCE] Nessun accesso diretto al dataset (by design)")
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    output_file = os.path.join(OUTPUT_DIR, "results.json")
+    # In Hone /app può essere read-only. Usiamo solo mount standard o /tmp.
+    out_dir = _first_writable_dir(["/output", "/tmp/output"])
+    output_file = os.path.join(out_dir, "results.json")
 
-    # --------------------------------------------------------
-    # OUTPUT MINIMO VALIDO PER HONE / SUBNET 5
-    # --------------------------------------------------------
     result = {
         "phase": "inference",
         "status": "success",
@@ -25,6 +35,7 @@ def run_inference():
         "meta": {
             "solver": "stub",
             "note": "Hone ARC stub – no direct dataset access",
+            "output_dir": out_dir,
         },
     }
 
