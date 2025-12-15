@@ -1,25 +1,28 @@
-import os
-import subprocess
+# ============================================================
+# ARC PREP PHASE – Hone compliant (NO git, NO download)
+# ============================================================
 
-SOLVER_REPO = os.environ.get("SOLVER_REPO", "https://github.com/TUO_USER/arc_solver")
-SOLVER_BRANCH = os.environ.get("SOLVER_BRANCH", "main")
+import os
+
 SOLVER_DIR = os.environ.get("SOLVER_DIR", "/app/arc_solver")
 
+
 def run_prep():
-    print("[PREP] Starting prep phase...")
-    print(f"[PREP] SOLVER_REPO={SOLVER_REPO}")
-    print(f"[PREP] SOLVER_BRANCH={SOLVER_BRANCH}")
-    print(f"[PREP] SOLVER_DIR={SOLVER_DIR}")
+    print("[PREP] Starting prep phase (Hone compliant)")
+    print(f"[PREP] Expected solver dir: {SOLVER_DIR}")
 
-    if os.path.exists(SOLVER_DIR) and os.path.isdir(SOLVER_DIR):
-        print("[PREP] Solver dir already exists, skipping clone.")
-        return
+    # --------------------------------------------------
+    # CHECK: solver deve essere già presente nel repo
+    # --------------------------------------------------
+    if not os.path.isdir(SOLVER_DIR):
+        raise RuntimeError(
+            f"[PREP] Solver directory not found: {SOLVER_DIR}\n"
+            f"[PREP] The solver must be bundled inside the miner repository."
+        )
 
-    subprocess.run(
-        ["git", "clone", "--depth", "1", "--branch", SOLVER_BRANCH, SOLVER_REPO, SOLVER_DIR],
-        check=True,
-    )
-    print("[PREP] Solver cloned successfully.")
+    print("[PREP] Solver directory found.")
+    print("[PREP] Prep phase completed successfully.")
+
 
 if __name__ == "__main__":
     run_prep()
