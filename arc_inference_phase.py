@@ -5,46 +5,56 @@
 import json
 import os
 
-DATA_ROOT = "/app/data"
+SEARCH_ROOTS = [
+    "/input",        # <-- QUESTO È QUELLO GIUSTO
+    "/app/data",     # fallback
+]
+
 OUTPUT_DIR = "/app/output"
 
 
 def _find_dataset_file():
     """
-    Hone salva il dataset in:
-    /app/data/job_<id>/*.json
-
-    Questa funzione lo individua in modo robusto.
+    Hone runner monta il dataset nel container sotto /input.
+    Facciamo scan robusta multi-root.
     """
-    for root, _, files in os.walk(DATA_ROOT):
-        for name in files:
-            if name.endswith(".json") and "dataset" in name.lower():
-                return os.path.join(root, name)
-            if name.endswith(".json") and "task" in name.lower():
-                return os.path.join(root, name)
+    for base in SEARCH_ROOTS:
+        if not os.path.exists(base):
+            continue
 
-    raise RuntimeError("Dataset Hone non trovato (scan completa fallita)")
+        for root, _, files in os.walk(base):
+            for name in files:
+                lname = name.lower()
+                if lname.endswith(".json") and (
+                    "dataset" in lname
+                    or "task" in lname
+                    or "tasks" in lname
+                ):
+                    return os.path.join(root, name)
+
+    raise RuntimeError(
+        f"Dataset Hone non trovato. Scan effettuata in: {SEARCH_ROOTS}"
+    )
 
 
 def run_inference():
     print("[INFERENCE] 🔵 Avvio inference phase")
+    print(f"[INFERENCE] Scan roots: {SEARCH_ROOTS}")
 
     dataset_path = _find_dataset_file()
-    print(f"[INFERENCE] Dataset trovato: {dataset_path}")
+    print(f"[INFERENCE] ✅ Dataset trovato: {dataset_path}")
 
     with open(dataset_path, "r") as f:
         dataset = json.load(f)
 
-    print(f"[INFERENCE] Numero task: {len(dataset)}")
+    print(f"[INFERENCE] Numero task caricati: {len(dataset)}")
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     output_file = os.path.join(OUTPUT_DIR, "results.json")
 
     # --------------------------------------------------------
-    # QUI IN FUTURO: CHIAMATA AL NON-MODELLO
+    # QUI IN FUTURO: NON-MODEL SOLVER
     # --------------------------------------------------------
-    # for task in dataset:
-    #     solve(task)
 
     result = {
         "phase": "inference",
@@ -52,8 +62,8 @@ def run_inference():
         "predictions": [],
         "meta": {
             "solver": "stub",
-            "tasks_seen": len(dataset)
-        }
+            "tasks_seen": len(dataset),
+        },
     }
 
     with open(output_file, "w") as f:
