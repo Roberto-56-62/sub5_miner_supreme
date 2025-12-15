@@ -1,9 +1,4 @@
-transformers==4.35.2
-accelerate==0.24.1
-huggingface_hub==0.19.4
+bittensor
+flask
 python-dotenv
-numpy
-
-sentencepiece>=0.1.99
-protobuf<4.0
 
