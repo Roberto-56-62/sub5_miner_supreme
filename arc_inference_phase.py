@@ -4,59 +4,48 @@
 
 import json
 import os
-import subprocess
 
-# Path standard Hone
-DATASET_DIR = "/app/data"
+DATA_ROOT = "/app/data"
 OUTPUT_DIR = "/app/output"
 
 
-def _load_dataset():
+def _find_dataset_file():
     """
-    Hone monta il dataset in /app/data
-    Il nome file può variare → li cerchiamo in modo robusto
+    Hone salva il dataset in:
+    /app/data/job_<id>/*.json
+
+    Questa funzione lo individua in modo robusto.
     """
-    candidates = [
-        "dataset.json",
-        "tasks.json",
-        "miner_current_dataset.json",
-    ]
+    for root, _, files in os.walk(DATA_ROOT):
+        for name in files:
+            if name.endswith(".json") and "dataset" in name.lower():
+                return os.path.join(root, name)
+            if name.endswith(".json") and "task" in name.lower():
+                return os.path.join(root, name)
 
-    for name in candidates:
-        path = os.path.join(DATASET_DIR, name)
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                return path, json.load(f)
-
-    raise RuntimeError("Dataset Hone non trovato in /app/data")
+    raise RuntimeError("Dataset Hone non trovato (scan completa fallita)")
 
 
 def run_inference():
     print("[INFERENCE] 🔵 Avvio inference phase")
 
-    # --------------------------------------------------------
-    # LOAD DATASET
-    # --------------------------------------------------------
-    dataset_path, dataset = _load_dataset()
-    print(f"[INFERENCE] Dataset caricato da: {dataset_path}")
+    dataset_path = _find_dataset_file()
+    print(f"[INFERENCE] Dataset trovato: {dataset_path}")
+
+    with open(dataset_path, "r") as f:
+        dataset = json.load(f)
+
     print(f"[INFERENCE] Numero task: {len(dataset)}")
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     output_file = os.path.join(OUTPUT_DIR, "results.json")
 
     # --------------------------------------------------------
-    # CHIAMATA AL SOLVER ESTERNO (NON-MODELLO)
-    # (per ora DISATTIVATA)
+    # QUI IN FUTURO: CHIAMATA AL NON-MODELLO
     # --------------------------------------------------------
-    # ESEMPIO FUTURO:
-    # subprocess.run(
-    #     ["python3", "solver_main.py", dataset_path, output_file],
-    #     check=True,
-    # )
+    # for task in dataset:
+    #     solve(task)
 
-    # --------------------------------------------------------
-    # OUTPUT VALIDO (TEST B)
-    # --------------------------------------------------------
     result = {
         "phase": "inference",
         "status": "success",
