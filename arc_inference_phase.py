@@ -1,5 +1,5 @@
 import json
-from solver.core import ARCSolver
+from arc_solver.solver.core import ARCSolver
 
 def run_inference(input_path="/input", output_path="/output"):
     with open(f"{input_path}/miner_current_dataset.json") as f:
