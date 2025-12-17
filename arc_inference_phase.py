@@ -1,8 +1,11 @@
 import json
 import os
+import shutil
+
 from arc_solver.solver.core import ARCSolver
 
 OUTPUT_DIR = "/output"
+
 
 def run_inference():
     print("[INFERENCE] 🔵 Avvio inference phase (Hone compliant)")
@@ -20,9 +23,35 @@ def run_inference():
         "results": []
     }
 
-    with open(f"{OUTPUT_DIR}/results.json", "w") as f:
+    output_file = os.path.join(OUTPUT_DIR, "results.json")
+
+    # Scrittura standard Hone/Sub5
+    with open(output_file, "w") as f:
         json.dump(result, f)
 
     print("[INFERENCE] ✅ Output scritto in /output/results.json")
+
+    # --------------------------------------------------
+    # COMPATIBILITÀ SANDBOX-RUNNER
+    # --------------------------------------------------
+    # Il runner legge results.json da una directory temporanea
+    # che può essere esposta via variabile d'ambiente.
+    runner_output_dir = os.environ.get("RUNNER_OUTPUT_DIR")
+
+    if runner_output_dir:
+        try:
+            os.makedirs(runner_output_dir, exist_ok=True)
+            shutil.copy(
+                output_file,
+                os.path.join(runner_output_dir, "results.json")
+            )
+            print(
+                f"[INFERENCE] 📦 Output copiato anche in {runner_output_dir}/results.json"
+            )
+        except Exception as e:
+            print(
+                f"[INFERENCE] ⚠️ Impossibile copiare output nel runner dir: {e}"
+            )
+
     print("[INFERENCE] ✅ Inference completata con successo")
 
